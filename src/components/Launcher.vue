@@ -83,16 +83,17 @@
 </template>
 
 <script>
+import { ethers } from "ethers";
 export default {
-  name: 'Launcher',
-  data () {
+  name: "Launcher",
+  data() {
     return {
       msg: "Welcome to Your Vue.js App",
       files: [],
       contract: {},
-      provider:"http://127.0.0.1:8545",
-      privateKey:"",
-      logs:""
+      provider: "http://127.0.0.1:8545",
+      privateKey: "",
+      logs: ""
     };
   },
   beforeMount() {},
@@ -100,22 +101,43 @@ export default {
     getData(file) {
       return new Promise(function(resolve, reject) {
         var reader = new FileReader();
-        reader.onload = function() { resolve(reader.result); };
+        reader.onload = function() {
+          resolve(reader.result);
+        };
         reader.onerror = reject;
         reader.readAsText(file);
       });
     },
-    async handleFilesUpload(){
+    async handleFilesUpload() {
       var files = this.$refs.files.files;
       var promise = this.getData(files[0]);
       var contractData = promise.then(function(result) {
-        return result
+        return result;
       });
-      this.contract = JSON.parse(await contractData)
+      this.contract = JSON.parse(await contractData);
     },
-    async deploy(){
+    async deploy() {
       //TODO ethers deployment
-      console.log(this.privateKey)
+      let provider = new ethers.getDefaultProvider(this.provider);
+      let wallet = new ethers.Wallet(this.privateKey, provider);
+      let factory = new ethers.ContractFactory(this.contract.abi,
+        this.contract.bytecode,
+        wallet
+      );
+
+      factory
+        .deploy()
+        .then(contract => {
+          this.logs =
+            "contract address - " +
+            contract.address +
+            " -- hash - " +
+          contract.deployTransaction.hash;
+        })
+        .catch(error => {
+          console.log("Error", error);
+          this.logs = error;
+        });
     }
   }
 };
@@ -123,8 +145,8 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-  p{
-    white-space: pre-wrap; 
-    overflow-wrap: break-word;
-  }
+p {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
 </style>
